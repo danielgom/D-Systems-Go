@@ -1,7 +1,7 @@
 package log
 
 import (
-	"github.com/danielgom/proglog/api/v1"
+	api "github.com/danielgom/proglog/api/v1"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"io"
@@ -37,7 +37,7 @@ func TestLog(t *testing.T) {
 }
 
 func testAppendRead(t *testing.T, log *Log) {
-	ap := &log_v1.Record{Value: []byte("hello world")}
+	ap := &api.Record{Value: []byte("hello world")}
 	off, err := log.append(ap)
 
 	require.NoError(t, err)
@@ -52,11 +52,12 @@ func testAppendRead(t *testing.T, log *Log) {
 func testOutOfRange(t *testing.T, log *Log) {
 	read, err := log.read(1)
 	require.Nil(t, read)
-	require.Error(t, err)
+	apiErr := err.(*api.ErrOffsetOutOfRange)
+	require.Equal(t, uint64(1), apiErr.Offset)
 }
 
 func testInitExisting(t *testing.T, log *Log) {
-	record := &log_v1.Record{Value: []byte("hello world")}
+	record := &api.Record{Value: []byte("hello world")}
 
 	for idx := 0; idx < 5; idx++ {
 		_, err := log.append(record)
@@ -81,7 +82,7 @@ func testInitExisting(t *testing.T, log *Log) {
 }
 
 func testReader(t *testing.T, log *Log) {
-	record := &log_v1.Record{Value: []byte("hello world")}
+	record := &api.Record{Value: []byte("hello world")}
 
 	offset, err := log.append(record)
 	require.NoError(t, err)
@@ -91,14 +92,14 @@ func testReader(t *testing.T, log *Log) {
 	readRecord, err := io.ReadAll(reader)
 	require.NoError(t, err)
 
-	read := &log_v1.Record{}
+	read := &api.Record{}
 	err = proto.Unmarshal(readRecord[lenWidth:], read)
 	require.NoError(t, err)
 	require.Equal(t, record.Value, read.Value)
 }
 
 func testTruncate(t *testing.T, log *Log) {
-	record := &log_v1.Record{Value: []byte("hello world")}
+	record := &api.Record{Value: []byte("hello world")}
 
 	for idx := 0; idx < 3; idx++ {
 		_, err := log.append(record)

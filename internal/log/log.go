@@ -1,8 +1,7 @@
 package log
 
 import (
-	"fmt"
-	"github.com/danielgom/proglog/api/v1"
+	api "github.com/danielgom/proglog/api/v1"
 	"io"
 	"os"
 	"path"
@@ -75,7 +74,7 @@ func (l *Log) setup() error {
 	return nil
 }
 
-func (l *Log) append(record *log_v1.Record) (uint64, error) {
+func (l *Log) append(record *api.Record) (uint64, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -91,7 +90,7 @@ func (l *Log) append(record *log_v1.Record) (uint64, error) {
 	return off, err
 }
 
-func (l *Log) read(off uint64) (*log_v1.Record, error) {
+func (l *Log) read(off uint64) (*api.Record, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -108,7 +107,7 @@ func (l *Log) read(off uint64) (*log_v1.Record, error) {
 
 	// If offset greater than next offset then out of range
 	if s == nil || s.nextOffset <= off {
-		return nil, fmt.Errorf("offset out of range")
+		return nil, &api.ErrOffsetOutOfRange{Offset: off}
 	}
 
 	return s.Read(off)
