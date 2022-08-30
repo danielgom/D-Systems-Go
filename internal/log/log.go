@@ -74,7 +74,7 @@ func (l *Log) setup() error {
 	return nil
 }
 
-func (l *Log) append(record *api.Record) (uint64, error) {
+func (l *Log) Append(record *api.Record) (uint64, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
@@ -90,7 +90,7 @@ func (l *Log) append(record *api.Record) (uint64, error) {
 	return off, err
 }
 
-func (l *Log) read(off uint64) (*api.Record, error) {
+func (l *Log) Read(off uint64) (*api.Record, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 

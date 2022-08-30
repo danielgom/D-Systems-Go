@@ -28,6 +28,7 @@ func newGrpcServer(config *Config) (*grpcServer, error) {
 }
 
 func (s *grpcServer) Produce(ctx context.Context, req *api.ProduceRequest) (*api.ProduceResponse, error) {
+
 	offset, err := s.config.CommitLog.Append(req.Record)
 	if err != nil {
 		return nil, err

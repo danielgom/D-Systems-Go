@@ -11,7 +11,7 @@ import (
 
 func TestLog(t *testing.T) {
 	for scenario, fn := range map[string]func(t *testing.T, log *Log){
-		"append and read a record succeeds": testAppendRead,
+		"Append and Read a record succeeds": testAppendRead,
 		"offset out of range error":         testOutOfRange,
 		"init with existing segments":       testInitExisting,
 		"reader":                            testReader,
@@ -38,19 +38,19 @@ func TestLog(t *testing.T) {
 
 func testAppendRead(t *testing.T, log *Log) {
 	ap := &api.Record{Value: []byte("hello world")}
-	off, err := log.append(ap)
+	off, err := log.Append(ap)
 
 	require.NoError(t, err)
 	require.Equal(t, uint64(0), off)
 
-	read, err := log.read(off)
+	read, err := log.Read(off)
 	require.NoError(t, err)
 	require.Equal(t, ap.Value, read.Value)
 
 }
 
 func testOutOfRange(t *testing.T, log *Log) {
-	read, err := log.read(1)
+	read, err := log.Read(1)
 	require.Nil(t, read)
 	apiErr := err.(*api.ErrOffsetOutOfRange)
 	require.Equal(t, uint64(1), apiErr.Offset)
@@ -60,7 +60,7 @@ func testInitExisting(t *testing.T, log *Log) {
 	record := &api.Record{Value: []byte("hello world")}
 
 	for idx := 0; idx < 5; idx++ {
-		_, err := log.append(record)
+		_, err := log.Append(record)
 		require.NoError(t, err)
 	}
 	require.NoError(t, log.Close())
@@ -84,7 +84,7 @@ func testInitExisting(t *testing.T, log *Log) {
 func testReader(t *testing.T, log *Log) {
 	record := &api.Record{Value: []byte("hello world")}
 
-	offset, err := log.append(record)
+	offset, err := log.Append(record)
 	require.NoError(t, err)
 	require.Equal(t, uint64(0), offset)
 
@@ -102,14 +102,14 @@ func testTruncate(t *testing.T, log *Log) {
 	record := &api.Record{Value: []byte("hello world")}
 
 	for idx := 0; idx < 3; idx++ {
-		_, err := log.append(record)
+		_, err := log.Append(record)
 		require.NoError(t, err)
 	}
 
 	err := log.Truncate(1)
 	require.NoError(t, err)
 
-	_, err = log.read(0)
+	_, err = log.Read(0)
 	require.Error(t, err)
 
 }
