@@ -20,8 +20,8 @@ type grpcServer struct {
 	config *Config
 }
 
-func NewGRPCServer(config *Config) (*grpc.Server, error) {
-	server := grpc.NewServer()
+func NewGRPCServer(config *Config, options ...grpc.ServerOption) (*grpc.Server, error) {
+	server := grpc.NewServer(options...)
 	srv, err := newGrpcServer(config)
 	if err != nil {
 		return nil, err
@@ -97,6 +97,5 @@ func (s *grpcServer) ConsumeStream(req *api.ConsumeRequest, stream api.Log_Consu
 			}
 			req.Offset++
 		}
-
 	}
 }
