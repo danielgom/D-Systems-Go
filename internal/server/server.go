@@ -3,7 +3,20 @@ package server
 import (
 	"context"
 	api "github.com/danielgom/proglog/api/v1"
+	"github.com/danielgom/proglog/internal/auth"
+	"github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
+)
+
+const (
+	objectWildCard = "*"
+	produceAction  = "produce"
+	consumeAction  = "consume"
 )
 
 type CommitLog interface {
@@ -12,7 +25,8 @@ type CommitLog interface {
 }
 
 type Config struct {
-	CommitLog CommitLog
+	CommitLog  CommitLog
+	Authorizer auth.Authorizer
 }
 
 type grpcServer struct {
@@ -21,6 +35,10 @@ type grpcServer struct {
 }
 
 func NewGRPCServer(config *Config, options ...grpc.ServerOption) (*grpc.Server, error) {
+
+	options = append(options, grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(grpc_auth.StreamServerInterceptor(authenticate))),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(grpc_auth.UnaryServerInterceptor(authenticate))))
+
 	server := grpc.NewServer(options...)
 	srv, err := newGrpcServer(config)
 	if err != nil {
@@ -39,7 +57,35 @@ func newGrpcServer(config *Config) (*grpcServer, error) {
 	return srv, nil
 }
 
+type subjectContextKey struct {
+}
+
+func subject(ctx context.Context) string {
+	return ctx.Value(subjectContextKey{}).(string)
+}
+
+func authenticate(ctx context.Context) (context.Context, error) {
+	p, ok := peer.FromContext(ctx)
+	if !ok {
+		return ctx, status.New(codes.Unknown, "couldn't find peer info").Err()
+	}
+
+	if p.AuthInfo == nil {
+		return context.WithValue(ctx, subjectContextKey{}, ""), nil
+	}
+
+	tlsInfo := p.AuthInfo.(credentials.TLSInfo)
+	sub := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
+	ctx = context.WithValue(ctx, subjectContextKey{}, sub)
+
+	return ctx, nil
+}
+
 func (s *grpcServer) Produce(ctx context.Context, req *api.ProduceRequest) (*api.ProduceResponse, error) {
+	err := s.config.Authorizer.Authorize(subject(ctx), objectWildCard, produceAction)
+	if err != nil {
+		return nil, err
+	}
 
 	offset, err := s.config.CommitLog.Append(req.Record)
 	if err != nil {
@@ -51,6 +97,11 @@ func (s *grpcServer) Produce(ctx context.Context, req *api.ProduceRequest) (*api
 }
 
 func (s *grpcServer) Consume(ctx context.Context, req *api.ConsumeRequest) (*api.ConsumeResponse, error) {
+	err := s.config.Authorizer.Authorize(subject(ctx), objectWildCard, consumeAction)
+	if err != nil {
+		return nil, err
+	}
+
 	record, err := s.config.CommitLog.Read(req.Offset)
 	if err != nil {
 		return nil, err
