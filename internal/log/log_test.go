@@ -1,12 +1,13 @@
 package log
 
 import (
-	api "github.com/danielgom/proglog/api/v1"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
 	"io"
 	"os"
 	"testing"
+
+	api "github.com/danielgom/proglog/api/v1"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 )
 
 func TestLog(t *testing.T) {
@@ -46,7 +47,6 @@ func testAppendRead(t *testing.T, log *Log) {
 	read, err := log.Read(off)
 	require.NoError(t, err)
 	require.Equal(t, ap.Value, read.Value)
-
 }
 
 func testOutOfRange(t *testing.T, log *Log) {
@@ -111,5 +111,4 @@ func testTruncate(t *testing.T, log *Log) {
 
 	_, err = log.Read(0)
 	require.Error(t, err)
-
 }

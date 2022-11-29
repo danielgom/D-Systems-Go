@@ -2,6 +2,7 @@ package log_v1
 
 import (
 	"fmt"
+
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/status"
 )
@@ -25,7 +26,6 @@ func (e *ErrOffsetOutOfRange) GRPCStatus() *status.Status {
 	}
 
 	return std
-
 }
 
 func (e *ErrOffsetOutOfRange) Error() string {

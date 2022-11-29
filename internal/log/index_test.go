@@ -1,9 +1,10 @@
 package log
 
 import (
-	"github.com/stretchr/testify/require"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestIndex(t *testing.T) {
@@ -43,7 +44,7 @@ func TestIndex(t *testing.T) {
 	require.EqualError(t, err, "EOF")
 	_ = idx.Close()
 
-	f, err = os.OpenFile(f.Name(), os.O_RDWR, 0600)
+	f, err = os.OpenFile(f.Name(), os.O_RDWR, 0o600)
 	require.NoError(t, err)
 
 	idx, err = newIndex(f, c)
@@ -53,5 +54,4 @@ func TestIndex(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint32(1), off)
 	require.Equal(t, entries[1].Pos, pos)
-
 }

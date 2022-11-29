@@ -1,15 +1,15 @@
 package log
 
 import (
-	log_v1 "github.com/danielgom/proglog/api/v1"
-	"github.com/stretchr/testify/require"
 	"io"
 	"os"
 	"testing"
+
+	log_v1 "github.com/danielgom/proglog/api/v1"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSegment(t *testing.T) {
-
 	dir, _ := os.MkdirTemp("", "segment-test")
 
 	defer func() {
@@ -55,5 +55,4 @@ func TestSegment(t *testing.T) {
 	s, err = newSegment(dir, 16, c)
 	require.NoError(t, err)
 	require.False(t, s.isMaxed())
-
 }

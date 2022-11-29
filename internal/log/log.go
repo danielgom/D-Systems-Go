@@ -1,7 +1,6 @@
 package log
 
 import (
-	api "github.com/danielgom/proglog/api/v1"
 	"io"
 	"os"
 	"path"
@@ -9,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	api "github.com/danielgom/proglog/api/v1"
 )
 
 type Log struct {
@@ -147,7 +148,6 @@ func (l *Log) LowestOffset() uint64 {
 	defer l.mu.Unlock()
 
 	return l.segments[0].baseOffset
-
 }
 
 func (l *Log) HighestOffset() (uint64, error) {

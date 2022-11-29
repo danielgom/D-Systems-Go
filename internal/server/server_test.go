@@ -2,6 +2,14 @@ package server
 
 import (
 	"context"
+	"flag"
+	"go.opencensus.io/examples/exporter"
+	"go.uber.org/zap"
+	"net"
+	"os"
+	"testing"
+	"time"
+
 	api "github.com/danielgom/proglog/api/v1"
 	"github.com/danielgom/proglog/internal/auth"
 	"github.com/danielgom/proglog/internal/config"
@@ -12,13 +20,24 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
-	"net"
-	"os"
-	"testing"
 )
 
-func TestServer(t *testing.T) {
+var debug = flag.Bool("debug", false, "Enable observability for debugging.")
 
+func TestMain(m *testing.M) {
+	flag.Parse()
+	if *debug {
+		logger, err := zap.NewDevelopment()
+		if err != nil {
+			panic(err)
+		}
+
+		zap.ReplaceGlobals(logger)
+	}
+	os.Exit(m.Run())
+}
+
+func TestServer(t *testing.T) {
 	for scenario, fn := range map[string]func(t *testing.T, rootClient, nobodyClient api.LogClient){
 		"produce/consume a message to/from the log succeeds": testProduceConsume,
 		"produce/consume stream succeeds":                    testProduceConsumeStream,
@@ -85,6 +104,27 @@ func setupTest(t *testing.T, fn func(config *Config)) (rootClient, nobodyClient 
 		Authorizer: casbinAuth,
 	}
 
+	var telemetryExporter *exporter.LogExporter
+
+	if *debug {
+		metricsLogFile, err := os.CreateTemp("", "metrics-*.log")
+		require.NoError(t, err)
+		t.Logf("metrics log file: %s", metricsLogFile.Name())
+
+		tracesLogFile, err := os.CreateTemp("", "traces-*.log")
+		require.NoError(t, err)
+		t.Logf("traces log file: %s", tracesLogFile.Name())
+
+		telemetryExporter, err = exporter.NewLogExporter(exporter.Options{
+			ReportingInterval: time.Second,
+			MetricsLogFile:    metricsLogFile.Name(),
+			TracesLogFile:     tracesLogFile.Name(),
+		})
+		require.NoError(t, err)
+		err = telemetryExporter.Start()
+		require.NoError(t, err)
+	}
+
 	if fn != nil {
 		fn(cfg)
 	}
@@ -105,8 +145,12 @@ func setupTest(t *testing.T, fn func(config *Config)) (rootClient, nobodyClient 
 		_ = nobodyConn.Close()
 		_ = l.Close()
 		_ = clog.Remove()
+		if telemetryExporter != nil {
+			time.Sleep(1500 * time.Millisecond)
+			telemetryExporter.Stop()
+			telemetryExporter.Close()
+		}
 	}
-
 }
 
 func testProduceConsume(t *testing.T, client, _ api.LogClient) {
@@ -159,7 +203,6 @@ func testProduceConsumeStream(t *testing.T, client, _ api.LogClient) {
 			Offset: uint64(idx),
 		})
 	}
-
 }
 
 func testConsumePastBoundary(t *testing.T, client, _ api.LogClient) {
@@ -174,7 +217,6 @@ func testConsumePastBoundary(t *testing.T, client, _ api.LogClient) {
 
 	ofRange := api.ErrOffsetOutOfRange{}
 	require.Equal(t, status.Code(ofRange.GRPCStatus().Err()), status.Code(err))
-
 }
 
 func testUnauthorized(t *testing.T, _, client api.LogClient) {

@@ -7,9 +7,7 @@ import (
 	"sync"
 )
 
-var (
-	enc = binary.BigEndian
-)
+var enc = binary.BigEndian
 
 const (
 	lenWidth = 8
@@ -24,7 +22,6 @@ type store struct {
 
 func newStore(f *os.File) (*store, error) {
 	fi, err := os.Stat(f.Name()) // If service restarts, gets the file's current size to recreate store
-
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +33,6 @@ func newStore(f *os.File) (*store, error) {
 		buf:  bufio.NewWriter(f),
 		size: size,
 	}, nil
-
 }
 
 func (s *store) Append(p []byte) (uint64, uint64, error) {

@@ -1,9 +1,10 @@
 package log
 
 import (
-	"github.com/tysonmote/gommap"
 	"io"
 	"os"
+
+	"github.com/tysonmote/gommap"
 )
 
 var (
@@ -56,7 +57,6 @@ func (i *index) Close() error {
 }
 
 func (i *index) Read(in int64) (out uint32, pos uint64, err error) {
-
 	if i.size == 0 {
 		return 0, 0, io.EOF
 	}

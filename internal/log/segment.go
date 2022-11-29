@@ -2,10 +2,11 @@ package log
 
 import (
 	"fmt"
-	"github.com/danielgom/proglog/api/v1"
-	"google.golang.org/protobuf/proto"
+	log_v1 "github.com/danielgom/proglog/api/v1"
 	"os"
 	"path"
+
+	"google.golang.org/protobuf/proto"
 )
 
 type segment struct {
@@ -24,8 +25,7 @@ func newSegment(dir string, baseOffset uint64, c Config) (*segment, error) {
 
 	var err error
 	storeFile, err := os.OpenFile(path.Join(dir,
-		fmt.Sprintf("%d%s", baseOffset, ".store")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
-
+		fmt.Sprintf("%d%s", baseOffset, ".store")), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o644)
 	if err != nil {
 		return nil, err
 	}
@@ -35,8 +35,7 @@ func newSegment(dir string, baseOffset uint64, c Config) (*segment, error) {
 	}
 
 	indexFile, err := os.OpenFile(path.Join(dir,
-		fmt.Sprintf("%d%s", baseOffset, ".index")), os.O_RDWR|os.O_CREATE, 0644)
-
+		fmt.Sprintf("%d%s", baseOffset, ".index")), os.O_RDWR|os.O_CREATE, 0o644)
 	if err != nil {
 		return nil, err
 	}
